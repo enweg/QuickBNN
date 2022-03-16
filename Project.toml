@@ -1,0 +1,4 @@
+name = "QuickBNN"
+uuid = "c96cbf08-603b-4dc5-a3a9-c622cb15def3"
+authors = ["Enrico Wegner <wegner1996@gmail.com>"]
+version = "0.1.0"
