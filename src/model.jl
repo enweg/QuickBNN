@@ -4,7 +4,8 @@
 ################################################################################
 
 function make_BNN(net::ChainBNN)
-    ex = Meta.parse("@model BNN(y, x) = begin end")
+    model_name = Random.randstring(3)
+    ex = Meta.parse("@model $model_name(y, x) = begin end")
     bl = ex.args[3].args[2] 
     # the variance
     push!(bl.args, :(sig ~ InverseGamma())) 
