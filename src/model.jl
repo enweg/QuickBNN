@@ -66,14 +66,8 @@ function generated_quantities_chain(model, chain)
 end
 
 function posterior_predictive(bnn, x, chain)
-    bnn = bnn(Vector{Missing}(missing, size(x, 2)), x)
-    model_predict = DynamicPPL.Model{(:y,)}(:model_predict_missing_data, 
-                    bnn.f,
-                    bnn.args, 
-                    bnn.defaults
-    )
-    preds = Turing.predict(model_predict, chain)
-    preds = setinfo(preds, (start_time = zeros(size(preds,3)), stop_time = zeros(size(preds,3))))
+    preds = Turing.Inference.predict(bnn(missing, x), chain)
+    preds = setinfo(preds, (start_time = fill(0.0, size(chain, 3)), stop_time = fill(0.0, size(chain, 3))))
     return preds
 end
 
