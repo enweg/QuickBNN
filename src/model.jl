@@ -10,7 +10,7 @@ function make_BNN(net::ChainBNN)
     # the variance
     push!(bl.args, :(sig ~ InverseGamma())) 
     # adding the layers
-    quants = Symbol[] 
+    quants = Symbol[:sig] 
     input = :x
     for (i, l) in enumerate(net)
         qs = create_layer!(bl, l, i, input)
