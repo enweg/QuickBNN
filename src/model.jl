@@ -65,8 +65,8 @@ function generated_quantities_chain(model, chain)
     return ch 
 end
 
-function posterior_predictive(bnn, y, x, chain)
-    bnn = bnn(Vector{Missing}(missing, length(y)), x)
+function posterior_predictive(bnn, x, chain)
+    bnn = bnn(Vector{Missing}(missing, size(x, 2)), x)
     model_predict = DynamicPPL.Model{(:y,)}(:model_predict_missing_data, 
                     bnn.f,
                     bnn.args, 
