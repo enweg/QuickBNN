@@ -9,7 +9,8 @@ using Turing
 using Flux
 using QuickBNN
 
-y = AR([0.5])
+ar1 = AR([0.5])
+y = ar1(;N=500)
 x = y[1:end-1]
 y = y[2:end]
 
