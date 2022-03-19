@@ -4,7 +4,7 @@
 ################################################################################
 
 function make_BNN(net::ChainBNN)
-    model_name = Random.randstring(3)
+    model_name = String(Random.shuffle('a':'z')[1:5])
     ex = Meta.parse("@model $model_name(y, x) = begin end")
     bl = ex.args[3].args[2] 
     # the variance
