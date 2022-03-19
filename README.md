@@ -17,7 +17,7 @@ y = y[2:end]
 net = ChainBNN(DenseBNN(1, 2, :sigmoid), DenseBNN(2, 1))
 bnn = BNN(net)
 model = bnn(y, hcat(x...))
-chain = sample(model, NUTS(), MCCMThreads(), 10_000, 4)
+chain = sample(model, NUTS(), MCMCThreads(), 10_000, 4)
 plot(chain)
 
 
