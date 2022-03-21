@@ -13,7 +13,7 @@ end
 struct BRNN
     in_size::Int
     out_size::Int # This is the state size
-    activation::Symbol
+    act::Symbol
 end
 BRNN(in_size::Int, out_size::Int) = BRNN(in_size, out_size, :tanh)
 
