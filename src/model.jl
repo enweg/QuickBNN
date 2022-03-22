@@ -3,7 +3,7 @@
 # Constructing BNN
 ################################################################################
 
-function make_BNN(net::ChainBNN)
+function make_BNN(net::ChainBNN; link::Symbol = :Normal, ν = missing)
     model_name = String(Random.shuffle('a':'z')[1:5])
     ex = Meta.parse("@model $model_name(y, x) = begin end")
     bl = ex.args[3].args[2] 
@@ -17,7 +17,15 @@ function make_BNN(net::ChainBNN)
         input = qs[1]
         quants = length(qs) > 1 ? vcat(quants, qs[2:end]...) : quants
     end
-    push!(bl.args, :(y ~ MvNormal(vec($input), sig*I)))
+    allowed_links = [:Normal, :TDist]
+    if link == :Normal
+        push!(bl.args, :(y ~ MvNormal(vec($input), sig*I)))
+    elseif link == :TDist 
+        if (ismissing(ν)) @warn("No ν (df of TDist) provided. Defaulting to 30"); ν = 30 end
+        push!(bl.args, :(Turing.@addlogprob!(sum(logpdf.(TDist($ν), (y.-vec($input)).-sig)./sig))))
+    else
+        @error("$([link]) linkfunction is not implemented. Currently implemented are $allowed_links")
+    end
     ret = :(return)
     ret.args[1] = :(()) 
     for q in quants
@@ -71,8 +79,8 @@ function posterior_predictive(bnn, x, chain)
     return preds
 end
 
-function BNN(net::ChainBNN)
-    ex = make_BNN(net)
+function BNN(net::ChainBNN; kwargs...)
+    ex = make_BNN(net; kwargs...)
     nn = Core.eval(@__MODULE__, ex)
     return nn
 end
