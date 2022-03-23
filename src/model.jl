@@ -13,10 +13,12 @@ function make_BNN(net::ChainBNN; link::Symbol = :Normal, ν = missing)
     quants = Symbol[:sig] 
     input = :x
     for (i, l) in enumerate(net)
+        push!(bl.args, LineNumberNode(i, "Layer"))
         qs = create_layer!(bl, l, i, input)
         input = qs[1]
         quants = length(qs) > 1 ? vcat(quants, qs[2:end]...) : quants
     end
+    push!(bl.args, LineNumberNode(1, "Likelihood"))
     allowed_links = [:Normal, :TDist]
     if link == :Normal
         push!(bl.args, :(y ~ MvNormal(vec($input), sig*I)))

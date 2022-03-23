@@ -3,7 +3,7 @@ mutable struct Recur{T<:AbstractArray}
     state::T
 end
 
-function (r::Recur)(x::V, Wx, Wh, b, σ::F) where {V<:VecOrMat, F<:Function}
+function (r::Recur)(x, Wx, Wh, b, σ::F) where {F<:Function}
     h = r.state
     h = σ.(Wx*x .+ Wh*h .+ b)
     r.state = h
