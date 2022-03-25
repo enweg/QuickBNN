@@ -3,38 +3,41 @@
 # Constructing BNN
 ################################################################################
 
-function make_BNN(net::ChainBNN; link::Symbol = :Normal, ν = missing)
+function make_BNN_core(net::ChainBNN, bl::Expr)
+    # adding the layers
+    quants = Symbol[:sig] 
+    units = Symbol[]
+    for (i, l) in enumerate(net)
+        push!(bl.args, LineNumberNode(i, "Layer"))
+        qs = create_layer!(bl, l, i)
+        push!(units, qs[1])
+        quants = length(qs) > 1 ? vcat(quants, qs[2:end]...) : quants
+    end
+    push!(bl.args, LineNumberNode(1, "Model Construction"))
+    push!(bl.args, Expr(:(=), :net, Expr(:call, :Chain, units...)))
+    return :net, quants
+end
+
+function make_BNN(net::ChainBNN, likelihood_function; kwargs...)
     model_name = String(Random.shuffle('a':'z')[1:5])
     ex = Meta.parse("@model $model_name(y, x) = begin end")
     bl = ex.args[3].args[2] 
-    # the variance
-    push!(bl.args, :(sig ~ InverseGamma())) 
-    # adding the layers
-    quants = Symbol[:sig] 
-    input = :x
-    for (i, l) in enumerate(net)
-        push!(bl.args, LineNumberNode(i, "Layer"))
-        qs = create_layer!(bl, l, i, input)
-        input = qs[1]
-        quants = length(qs) > 1 ? vcat(quants, qs[2:end]...) : quants
-    end
+    modelname, quants = make_BNN_core(net, bl)
     push!(bl.args, LineNumberNode(1, "Likelihood"))
-    allowed_links = [:Normal, :TDist]
-    if link == :Normal
-        push!(bl.args, :(y ~ MvNormal(vec($input), sig*I)))
-    elseif link == :TDist 
-        if (ismissing(ν)) @warn("No ν (df of TDist) provided. Defaulting to 30"); ν = 30 end
-        push!(bl.args, :(Turing.@addlogprob!(sum(logpdf.(TDist($ν), (y.-vec($input)).-sig)./sig))))
-    else
-        @error("$([link]) linkfunction is not implemented. Currently implemented are $allowed_links")
-    end
+    likelihood_function(bl, modelname; kwargs...)
     ret = :(return)
     ret.args[1] = :(()) 
     for q in quants
         push!(ret.args[1].args, :($q = $q))
     end
     push!(bl.args, ret)
-    return ex
+    return ex 
+end
+
+function BNN(net::ChainBNN, likelihood_function; kwargs...)
+    ex = make_BNN(net, likelihood_function; kwargs...)
+    nn = Core.eval(@__MODULE__, ex)
+    return nn
 end
 
 function make_vec(x, sym)
@@ -79,10 +82,4 @@ function posterior_predictive(bnn, x, chain)
     preds = Turing.Inference.predict(bnn(missing, x), chain)
     preds = setinfo(preds, (start_time = fill(0.0, size(chain, 3)), stop_time = fill(0.0, size(chain, 3))))
     return preds
-end
-
-function BNN(net::ChainBNN; kwargs...)
-    ex = make_BNN(net; kwargs...)
-    nn = Core.eval(@__MODULE__, ex)
-    return nn
 end

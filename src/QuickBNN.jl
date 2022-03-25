@@ -21,11 +21,12 @@ include("AR.jl")
 include("./layers/dense.jl")
 include("./layers/recurrent.jl")
 include("model.jl")
+include("./likelihoods.jl")
 
 ################################################################################
 # Exports
 ################################################################################
-export DenseBNN, DenseOrderedBias, DenseOrderedWeights, DenseForcePosFirstWeight, ChainBNN
+export BDense, DenseOrderedBias, DenseOrderedWeights, DenseForcePosFirstWeight, ChainBNN
 export BRNN
 export NNAR, theoretical_dist
 export make_BNN, generated_quantities_chain, posterior_predictive, BNN

@@ -3,12 +3,12 @@
 # Layers 
 ################################################################################
 
-struct DenseBNN
+struct BDense
     in_size::Int
     out_size::Int
     act::Symbol
 end
-DenseBNN(in_size::Int, out_size::Int) = DenseBNN(in_size, out_size, :identity)
+BDense(in_size::Int, out_size::Int) = BDense(in_size, out_size, :identity)
 
 struct DenseOrderedBias
     in_size::Int
@@ -44,50 +44,47 @@ ChainBNN(args...) = ChainBNN(args)
 # create layer implementations
 ################################################################################
 
-function create_layer!(ex::Expr, layer::DenseBNN, layer_num::Int, input::Symbol)
+function create_layer!(ex::Expr, layer::BDense, layer_num::Int)
     # Adds a dense layer to a turing model by adding it to ex. 
     # output variable symbol will be returned for later use. 
     @unpack in_size, out_size, act = layer
-    act = get_Flux_fast_act(act)
 
-    weight, bias, out = get_Symbol_names(layer_num, "W", "b", "output")
+    weight, bias, unit = get_Symbol_names(layer_num, "W", "b", "unit")
 
     push!(ex.args, :($weight ~ filldist(Normal(), $out_size, $in_size)))
     push!(ex.args, :($bias ~ filldist(Normal(), $out_size)))
-    push!(ex.args, :($out = $act.($weight * $input .+ $bias)))
+    push!(ex.args, :($unit = Flux.Dense($weight, $bias, $act)))
 
-    return out, weight, bias
+    return unit, weight, bias
 end
 
-function create_layer!(ex::Expr, layer::DenseOrderedBias, layer_num::Int, input::Symbol)
+function create_layer!(ex::Expr, layer::DenseOrderedBias, layer_num::Int)
     # Same as dense layer but forces the biases to be ordered from 
     # smallest to largest by putting a truncated normal prior on all biases
     # except the first one and definining biases b1*=b1, b2*=b1* + b2 ...
     @unpack in_size, out_size, act = layer
     if (out_size == 1) error("DenseOrderedBias layers are only suitable for more than one output") end
-    act = get_Flux_fast_act(act)
 
-    weight, bfirst, binc, bias, out = get_Symbol_names(layer_num, "W", "bfrst", "binc", "b", "output")
+    weight, bfirst, binc, bias, unit = get_Symbol_names(layer_num, "W", "bfrst", "binc", "b", "unit")
 
     push!(ex.args, :($weight ~ filldist(Normal(), $out_size, $in_size)))
     push!(ex.args, :($bfirst ~ Normal()))
     push!(ex.args, :($binc ~ filldist(TruncatedNormal(0, 1, 0, Inf), $(out_size - 1))))
     push!(ex.args, :($bias = cumsum(vcat($bfirst, $binc))))
-    push!(ex.args, :($out = $act.($weight * $input .+ $bias)))
+    push!(ex.args, :($unit = Dense($weight, $bias, $act)))
 
-    return out, weight, bias
+    return unit, weight, bias
 end
 
-function create_layer!(ex::Expr, layer::DenseOrderedWeights, layer_num::Int, input::Symbol)
+function create_layer!(ex::Expr, layer::DenseOrderedWeights, layer_num::Int)
     # Similar to dense but forces an ordering of the weights by ordering the first
     # column of the weight matrix. This is done by setting for w[1,1] a normal prior and for
     # w[*,1] a truncated normal and defninint w*[1,1] = w[1,1], w*[i, 1] = w*[i-1, 1]
     # The ramaining columns of the weight matrix have a normal prior
     @unpack in_size, out_size, act = layer
     if (out_size == 1) error("DenseOrderedWeights layers are only suitable for more than one output") end
-    act = get_Flux_fast_act(act)
 
-    w1first, w1inc, wright, weight, bias, out = get_Symbol_names(layer_num, "wfirst", "winc", "wright", "W", "b", "output")
+    w1first, w1inc, wright, weight, bias, unit = get_Symbol_names(layer_num, "wfirst", "winc", "wright", "W", "b", "unit")
 
     push!(ex.args, :($w1first ~ Normal()))
     push!(ex.args, :($w1inc ~ filldist(TruncatedNormal(0, 1, 0, Inf), $(out_size - 1))))
@@ -99,18 +96,17 @@ function create_layer!(ex::Expr, layer::DenseOrderedWeights, layer_num::Int, inp
     end
 
     push!(ex.args, :($bias ~ filldist(Normal(), $out_size)))
-    push!(ex.args, :($out = $act.($weight * $input .+ $bias)))
+    push!(ex.args, :($unit = Dense($weight, $bias, $act)))
 
-    return out, weight, bias
+    return unit, weight, bias
 end
 
-function create_layer!(ex::Expr, layer::DenseForcePosFirstWeight, layer_num::Int, input::Symbol)
+function create_layer!(ex::Expr, layer::DenseForcePosFirstWeight, layer_num::Int)
     # Forces the first weight in the first column of the weight matrix to be 
     # positive. This is done by putting a truncated normal prior on it
     @unpack in_size, out_size, act = layer
-    act = get_Flux_fast_act(act)
 
-    wpos, wrest, weight, bias, out = get_Symbol_names(layer_num, "wpos", "Wrest", "W", "b", "output")
+    wpos, wrest, weight, bias, unit = get_Symbol_names(layer_num, "wpos", "Wrest", "W", "b", "unit")
 
     push!(ex.args, :($wpos ~ TruncatedNormal(0, 1, 0, Inf)))
     if out_size == 1
@@ -120,7 +116,7 @@ function create_layer!(ex::Expr, layer::DenseForcePosFirstWeight, layer_num::Int
         push!(ex.args, :($weight = reshape(vcat($wpos, $wrest), $out_size, $in_size)))
     end
     push!(ex.args, :($bias ~ Normal($out_size)))
-    push!(ex.args, :($out = $act.($weight * $input .+ $bias)))
+    push!(ex.args, :($unit = Dense($weight, $bias, $act)))
 
-    return out, weight, bias
+    return unit, weight, bias
 end
