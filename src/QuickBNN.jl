@@ -30,6 +30,6 @@ export BRNN
 export NNAR, theoretical_dist
 export make_BNN, generated_quantities_chain, posterior_predictive, BNN
 export AR, theoretical_dist
-export to_RNN_tensor
+export to_RNN_format, reset!
 
 end # module

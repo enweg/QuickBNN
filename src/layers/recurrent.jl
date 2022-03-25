@@ -1,7 +1,10 @@
 
 mutable struct Recur{T<:AbstractArray}
     state::T
+    intial_state::T
 end
+Recur(state::AbstractArray) = Recur(state, state)
+reset!(r::Recur) = r.state = r.intial_state
 
 function (r::Recur)(x, Wx, Wh, b, σ::F) where {F<:Function}
     h = r.state

@@ -8,16 +8,14 @@ get_Symbol_names(layer_num, args...) = [Symbol("$(n)$(layer_num)") for n in args
 
 get_symbol_from_var(var) = eval(:(Symbol("$($var)")))
 
-# Transforms a vector of matrices to a tensor which can then be fed into 
-# an RNN. This allows handling of multiple sequences at once
-# tensor will be of dimensions n_features x n_seq x len_seq 
-function to_RNN_tensor(sequences::Vector{Matrix{T}}) where {T <: Real}
-    # T = eltype(sequences[1])
+function to_RNN_format(sequences::Vector{Matrix{T}}) where {T}
+    # Assumes that each matrix is of the format n_features x len_seq 
+    # We need a vector of matrices of format n_featurs x n_seq for RNN layers 
     n_seq = length(sequences)
     n_features, len_seq = size(sequences[1])
-    tensor = zeros(T, n_features, n_seq, len_seq)
-    for (i, seq) in enumerate(sequences)
-        tensor[:,i,:] = seq
+    out = [ones(n_features, n_seq) for _ in 1:len_seq]
+    for t=1:len_seq 
+        out[t] = hcat([seq[:,t] for seq in sequences]...)
     end
-    return tensor
+    return out
 end
