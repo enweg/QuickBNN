@@ -40,6 +40,10 @@ function BNN(net::ChainBNN, likelihood_function; kwargs...)
     return nn
 end
 
+################################################################################
+# Obtaining posterior statistics and retransformed parameters
+################################################################################
+
 function make_vec(x, sym)
     if length(x) == 1
         return x, sym

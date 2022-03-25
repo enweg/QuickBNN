@@ -1,17 +1,14 @@
 
-mutable struct Recur{T<:AbstractArray}
-    state::T
-    intial_state::T
-end
-Recur(state::AbstractArray) = Recur(state, state)
-reset!(r::Recur) = r.state = r.intial_state
+import Flux: RNNCell, reshape_cell_output
 
-function (r::Recur)(x, Wx, Wh, b, σ::F) where {F<:Function}
-    h = r.state
-    h = σ.(Wx*x .+ Wh*h .+ b)
-    r.state = h
-    return h
-end
+# The following is equivalent to what Flux has implemented up to a 
+# type definition which was taken away to fix a bug with ReverseDiff
+function (m::RNNCell{F,A,V,T})(h, x) where {F,A,V,T}
+    Wi, Wh, b = m.Wi, m.Wh, m.b
+    σ = NNlib.fast_act(m.σ, x)
+    h = σ.(Wi*x .+ Wh*h .+ b)
+    return h, reshape_cell_output(h, x)
+  end
 
 struct BRNN
     in_size::Int

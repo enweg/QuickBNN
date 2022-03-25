@@ -18,7 +18,8 @@ end
 function likelihood_tdist(bl::Expr, modelname::Symbol; ν=missing)
     if (ismissing(ν)) @warn("No ν (df of TDist) provided. Defaulting to ν=30"); ν = 30 end
     push!(bl.args, :(sig ~ InverseGamma()))
-    push!(bl.args, :(Turing.@addlogprob!(sum(logpdf.(TDist($ν), (y.-vec($modelname(x))).-sig)./sig))))
+    push!(bl.args, :(prediction = vec($modelname(x))))
+    push!(bl.args, :(y ~ arraydist([prediction[i] + sig*TDist($ν) for i in 1:length(prediction)])))
 end
 
 # sequence to sequence
@@ -28,5 +29,6 @@ end
 function likelihood_tdist_seq_to_one(bl::Expr, modelname::Symbol; ν=missing)
     if (ismissing(ν)) @warn("No ν (df of TDist) provided. Defaulting to ν=30"); ν = 30 end
     push!(bl.args, :(sig ~ InverseGamma()))
-    push!(bl.args, :(Turing.@addlogprob!(sum(logpdf.(TDist($ν), (y.-vec([$modelname(xx) for xx in x][end])).-sig)./sig))))
+    push!(bl.args, :(prediction = vec([$modelname(xx) for xx in x][end])))
+    push!(bl.args, :(y ~ arraydist([prediction[i] + sig * TDist($ν) for i in 1:length(prediction)])))
 end
