@@ -11,7 +11,8 @@ end
 # vector: of length len_seq
 function likelihood_normal_seq_to_one(bl::Expr, modelname::Symbol)
     push!(bl.args, :(sig ~ InverseGamma()))
-    push!(bl.args, :(y ~ MvNormal(vec([$modelname(xx) for xx in x][end]), sig*I)))
+    push!(bl.args, LineNumberNode(1, "Does this work?"))
+    push!(bl.args, :(y ~ MvNormal(vec([$modelname(x[i]) for i=1:length(x)][end]), sig*I)))
 end
 
 # standard feed forward

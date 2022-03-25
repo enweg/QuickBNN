@@ -27,7 +27,7 @@ include("./likelihoods.jl")
 # Exports
 ################################################################################
 export BDense, DenseOrderedBias, DenseOrderedWeights, DenseForcePosFirstWeight, ChainBNN
-export BRNN
+export BRNN, BLSTM
 export NNAR, theoretical_dist
 export make_BNN, generated_quantities_chain, posterior_predictive, BNN
 export AR, theoretical_dist
