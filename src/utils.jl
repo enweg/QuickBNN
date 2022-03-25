@@ -23,5 +23,5 @@ end
 function to_RNN_format(tensor::Array{T, 3}) where {T}
     # R cannot handle vectors of matrices, so R will communicate using tensors
     # these must be retransformed into a vector of sequences. 
-    return collect(eachslice(tensor; dims = 3))
+    return [tensor[:,:,i] for i=1:size(tensor, 3)]
 end
